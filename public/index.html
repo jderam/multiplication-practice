@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multiplication Practice</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --accent: #e94560;
+      --correct: #4ecca3;
+      --wrong: #ff6b6b;
+      --gold: #ffd700;
+      --text: #eaeaea;
+      --muted: #8892a4;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 520px;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 28px;
+      background: linear-gradient(135deg, var(--accent), #f5a623);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1.1rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+    input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field { margin-bottom: 20px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 24px;
+      transition: transform 0.1s, opacity 0.2s;
+      user-select: none;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      width: 100%;
+      font-size: 1.25rem;
+      padding: 16px;
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+    .btn-correct { background: var(--correct); color: #0a2a22; }
+    .btn-small {
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(233,69,96,0.5); }
+      50%       { box-shadow: 0 0 0 12px rgba(233,69,96,0); }
+    }
+
+    /* ── Mode/Factor selectors ── */
+    .selector-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .selector-group label { margin: 0; }
+    .seg-btn {
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      transition: all 0.15s;
+    }
+    .seg-btn:hover { border-color: var(--accent); color: var(--text); }
+    .seg-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .seg-btn.active-teal {
+      background: var(--correct);
+      border-color: var(--correct);
+      color: #0a2a22;
+    }
+
+    .options-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #f5a623);
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Problem display ── */
+    .problem-wrap {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .problem-number {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .problem-text {
+      font-size: 3.5rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      animation: slideInDown 0.3s ease;
+    }
+
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Answer input row ── */
+    .answer-row {
+      display: flex;
+      gap: 10px;
+    }
+    .answer-row input {
+      flex: 1;
+      font-size: 1.4rem;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    /* ── Feedback overlay ── */
+    .feedback-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .feedback-symbol {
+      font-size: 8rem;
+      animation: feedbackPop 0.8s ease forwards;
+    }
+    @keyframes feedbackPop {
+      0%   { opacity: 0; transform: scale(0.4); }
+      30%  { opacity: 1; transform: scale(1.2); }
+      70%  { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.9); }
+    }
+
+    /* ── Correct burst ── */
+    .burst-ring {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 99;
+    }
+    .burst-ring::after {
+      content: '';
+      width: 160px;
+      height: 160px;
+      border: 6px solid var(--correct);
+      border-radius: 50%;
+      animation: correctBurst 0.6s ease forwards;
+    }
+    @keyframes correctBurst {
+      from { opacity: 0.9; transform: scale(0.5); }
+      to   { opacity: 0; transform: scale(2.5); }
+    }
+
+    /* ── Shake (wrong) ── */
+    .shake {
+      animation: shake 0.5s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-10px); }
+      40%      { transform: translateX(10px); }
+      60%      { transform: translateX(-8px); }
+      80%      { transform: translateX(8px); }
+    }
+
+    /* ── Results ── */
+    .score-display {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .score-number {
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--correct);
+      line-height: 1;
+    }
+    .score-label {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    .results-table th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .results-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .results-table tr.row-correct td { color: var(--correct); }
+    .results-table tr.row-wrong td  { color: var(--wrong); }
+
+    .time-cell { color: var(--muted); font-size: 0.85rem; }
+
+    /* ── Achievements ── */
+    .achievements {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    .achievement-badge {
+      background: linear-gradient(135deg, #7b5c00, #ffd700);
+      border-radius: 20px;
+      color: #1a1400;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .achievement-badge:nth-child(1) { animation: achievementBounce 0.7s 0.1s both; }
+    .achievement-badge:nth-child(2) { animation: achievementBounce 0.7s 0.4s both; }
+    .achievement-badge:nth-child(3) { animation: achievementBounce 0.7s 0.7s both; }
+    .achievement-badge:nth-child(4) { animation: achievementBounce 0.7s 1.0s both; }
+
+    @keyframes achievementBounce {
+      0%   { opacity: 0; transform: scale(0.3) translateY(-20px); }
+      60%  { transform: scale(1.15) translateY(0); }
+      80%  { transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Log error ── */
+    .log-error {
+      font-size: 0.8rem;
+      color: var(--wrong);
+      text-align: center;
+      margin-top: 10px;
+      padding: 8px;
+      background: rgba(255,107,107,0.1);
+      border-radius: 6px;
+    }
+
+    /* ── Misc ── */
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 16px 0;
+    }
+    .text-center { text-align: center; }
+    .mt-4 { margin-top: 16px; }
+    .mt-2 { margin-top: 8px; }
+    .flex-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Vue transitions ── */
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- ═══════════════════════════ SETUP ═══════════════════════════ -->
+  <transition name="fade" mode="out-in">
+  <div v-if="appState === 'setup'" key="setup">
+    <h1>✕ Multiplication<br>Practice</h1>
+    <div class="card">
+      <div class="field">
+        <label for="name-input">Your name</label>
+        <input
+          id="name-input"
+          ref="nameInput"
+          type="text"
+          v-model="userName"
+          @input="saveName"
+          placeholder="Type your name…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <transition name="fade">
+      <div v-if="userName.trim().length > 0">
+        <hr class="divider" />
+
+        <!-- Mode -->
+        <div class="options-label">Difficulty</div>
+        <div class="selector-group" style="margin-bottom:16px;">
+          <button
+            class="seg-btn"
+            :class="{ 'active': mode === 'normal' }"
+            @click="setMode('normal')"
+          >Normal (×0–9)</button>
+          <button
+            class="seg-btn"
+            :class="{ 'active': mode === 'hard' }"
+            @click="setMode('hard')"
+          >Hard (×0–12)</button>
+        </div>
+
+        <!-- Factor -->
+        <div class="options-label">Practice</div>
+        <div class="selector-group">
+          <button
+            class="seg-btn"
+            :class="{ 'active-teal': factorMode === 'random' }"
+            @click="factorMode = 'random'"
+          >Random</button>
+          <button
+            v-for="n in maxFactor + 1"
+            :key="n - 1"
+            class="seg-btn btn-small"
+            :class="{ 'active-teal': factorMode === String(n - 1) }"
+            @click="factorMode = String(n - 1)"
+          >{{ n - 1 }}</button>
+        </div>
+
+        <button class="btn btn-primary mt-4" @click="startSession">
+          START
+        </button>
+      </div>
+      </transition>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ PLAYING ═══════════════════════════ -->
+  <div v-else-if="appState === 'playing'" key="playing">
+    <h1>✕ Multiplication<br>Practice</h1>
+
+    <!-- Progress bar -->
+    <div class="progress-wrap">
+      <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>
+    </div>
+
+    <div class="card">
+      <div class="problem-wrap">
+        <div class="problem-number">Problem {{ currentIndex + 1 }} of {{ problems.length }}</div>
+        <div class="problem-text" :class="{ shake: feedbackState === 'wrong' }" :key="currentIndex">
+          {{ currentProblem ? currentProblem.problem + ' =' : '' }}
+        </div>
+      </div>
+
+      <form @submit.prevent="submitAnswer" autocomplete="off">
+        <div class="answer-row">
+          <input
+            ref="answerInput"
+            type="number"
+            v-model="answerInput"
+            :disabled="feedbackState !== null"
+            placeholder="?"
+            inputmode="numeric"
+            autocomplete="off"
+          />
+        </div>
+        <!-- Hidden submit triggers Enter key -->
+        <button type="submit" style="display:none;"></button>
+      </form>
+    </div>
+
+    <!-- Feedback overlays -->
+    <div v-if="feedbackState === 'correct'" class="burst-ring"></div>
+    <div v-if="feedbackState !== null" class="feedback-overlay">
+      <span class="feedback-symbol">{{ feedbackState === 'correct' ? '✓' : '✗' }}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ RESULTS ═══════════════════════════ -->
+  <div v-else-if="appState === 'results'" key="results">
+    <h1>✕ Multiplication<br>Practice</h1>
+    <div class="card">
+      <!-- Score -->
+      <div class="score-display">
+        <div class="score-number">{{ score }}/{{ problems.length }}</div>
+        <div class="score-label">
+          {{ score === problems.length ? '🎉 Perfect score!' : score >= 8 ? 'Great work!' : score >= 6 ? 'Keep practicing!' : 'You\'ll get there!' }}
+        </div>
+      </div>
+
+      <!-- Achievements -->
+      <div v-if="showAchievements.length > 0" class="achievements">
+        <div
+          v-for="ach in showAchievements"
+          :key="ach.key"
+          class="achievement-badge"
+        >
+          <span>{{ ach.icon }}</span>
+          <span>{{ ach.label }}</span>
+        </div>
+      </div>
+
+      <!-- Problem table -->
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Problem</th>
+            <th>Your Answer</th>
+            <th>Correct</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(p, i) in problems"
+            :key="i"
+            :class="p.correct ? 'row-correct' : 'row-wrong'"
+          >
+            <td>{{ i + 1 }}</td>
+            <td>{{ p.problem }}</td>
+            <td>{{ p.submittedAnswer }}</td>
+            <td>{{ p.correct ? '✓' : '✗ (' + p.correctAnswer + ')' }}</td>
+            <td class="time-cell">{{ p.timeToSolve.toFixed(1) }}s</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button class="btn btn-primary" @click="resetToSetup">Play Again</button>
+
+      <div v-if="logError" class="log-error">
+        ⚠ Results could not be saved to the server.
+      </div>
+    </div>
+  </div>
+  </transition>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      appState: 'setup',
+      userName: '',
+      mode: 'normal',
+      factorMode: 'random',
+      sessionId: null,
+      sessionStart: null,
+      sessionEnd: null,
+      problems: [],
+      currentIndex: 0,
+      answerInput: '',
+      problemStartTime: null,
+      feedbackState: null,
+      showAchievements: [],
+      logError: false,
+      audioCtx: null,
+    };
+  },
+
+  computed: {
+    maxFactor() {
+      return this.mode === 'hard' ? 12 : 9;
+    },
+    currentProblem() {
+      return this.problems[this.currentIndex] || null;
+    },
+    progressPct() {
+      return (this.currentIndex / this.problems.length) * 100;
+    },
+    score() {
+      return this.problems.filter(p => p.correct).length;
+    },
+  },
+
+  created() {
+    const saved = localStorage.getItem('mpg_username');
+    if (saved) this.userName = saved;
+  },
+
+  mounted() {
+    this.$nextTick(() => {
+      if (this.$refs.nameInput) this.$refs.nameInput.focus();
+    });
+  },
+
+  methods: {
+    // ── Setup helpers ───────────────────────────────────────────────
+    saveName() {
+      localStorage.setItem('mpg_username', this.userName);
+    },
+
+    setMode(m) {
+      this.mode = m;
+      if (m === 'normal') {
+        const n = parseInt(this.factorMode, 10);
+        if (!isNaN(n) && n > 9) this.factorMode = 'random';
+      }
+    },
+
+    // ── Session lifecycle ────────────────────────────────────────────
+    generateUUID() {
+      // crypto.randomUUID() requires HTTPS; this works over plain HTTP too
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    },
+
+    startSession() {
+      this.sessionId = this.generateUUID();
+      this.sessionStart = Date.now();
+      this.problems = this.generateProblems();
+      this.currentIndex = 0;
+      this.feedbackState = null;
+      this.showAchievements = [];
+      this.logError = false;
+      this.answerInput = '';
+      this.appState = 'playing';
+      // Delay past the 250ms out-in fade transition so the input is in the DOM
+      setTimeout(() => {
+        this.problemStartTime = Date.now();
+        if (this.$refs.answerInput) this.$refs.answerInput.focus();
+      }, 300);
+    },
+
+    resetToSetup() {
+      this.appState = 'setup';
+      this.$nextTick(() => {
+        if (this.$refs.nameInput) this.$refs.nameInput.focus();
+      });
+    },
+
+    // ── Problem generation ───────────────────────────────────────────
+    generateProblems() {
+      const max = this.maxFactor;
+      const isFixed = this.factorMode !== 'random';
+      const fixedFactor = isFixed ? parseInt(this.factorMode, 10) : null;
+      const problems = [];
+      let lastB = null;
+
+      for (let i = 0; i < 10; i++) {
+        let a, b;
+        let tries = 0;
+        do {
+          if (isFixed) {
+            a = fixedFactor;
+            b = Math.floor(Math.random() * (max + 1));
+          } else {
+            a = Math.floor(Math.random() * (max + 1));
+            b = Math.floor(Math.random() * (max + 1));
+          }
+          tries++;
+        } while (b === lastB && tries < 20);
+        lastB = b;
+        problems.push({
+          a,
+          b,
+          problem: `${a}×${b}`,
+          correctAnswer: a * b,
+          submittedAnswer: null,
+          correct: false,
+          timeToSolve: 0,
+        });
+      }
+      return problems;
+    },
+
+    // ── Answer submission ────────────────────────────────────────────
+    submitAnswer() {
+      if (this.feedbackState !== null) return;
+      const raw = String(this.answerInput).trim();
+      if (raw === '' || isNaN(parseInt(raw, 10))) return;
+
+      const answer = parseInt(raw, 10);
+      const p = this.problems[this.currentIndex];
+      const timeToSolve = (Date.now() - this.problemStartTime) / 1000;
+
+      p.submittedAnswer = answer;
+      p.correct = answer === p.correctAnswer;
+      p.timeToSolve = timeToSolve;
+
+      this.feedbackState = p.correct ? 'correct' : 'wrong';
+      this.playSound(p.correct ? 'correct' : 'wrong');
+
+      setTimeout(() => {
+        this.feedbackState = null;
+        this.answerInput = '';
+
+        if (this.currentIndex >= this.problems.length - 1) {
+          this.endSession();
+        } else {
+          this.currentIndex++;
+          this.$nextTick(() => {
+            this.problemStartTime = Date.now();
+            if (this.$refs.answerInput) this.$refs.answerInput.focus();
+          });
+        }
+      }, 800);
+    },
+
+    // ── End session ──────────────────────────────────────────────────
+    endSession() {
+      this.sessionEnd = Date.now();
+      this.showAchievements = this.detectAchievements();
+      if (this.showAchievements.length > 0) {
+        setTimeout(() => this.playSound('achievement'), 200);
+      }
+      this.appState = 'results';
+      this.logSession();
+    },
+
+    // ── Achievement detection ─────────────────────────────────────────
+    detectAchievements() {
+      const ps = this.problems;
+      const all = ps.length;
+      const correct = ps.filter(p => p.correct).length;
+      const allCorrect = correct === all;
+      const allFast = ps.every(p => p.timeToSolve < 5);
+      const results = [];
+
+      if (allCorrect && allFast) {
+        results.push({ key: 'fast_perfect', icon: '⚡', label: 'Lightning Perfect' });
+      } else if (allCorrect) {
+        results.push({ key: 'perfect', icon: '🌟', label: 'Perfect Score' });
+      }
+
+      if (allFast && !allCorrect) {
+        results.push({ key: 'speedster', icon: '🚀', label: 'Speedster' });
+      }
+
+      const hadMistakeEarly = ps.slice(0, 5).some(p => !p.correct);
+      const finishedStrong = ps.slice(5).every(p => p.correct);
+      if (hadMistakeEarly && finishedStrong && !allCorrect) {
+        results.push({ key: 'comeback', icon: '💪', label: 'Comeback Kid' });
+      }
+
+      return results;
+    },
+
+    // ── Session logging ───────────────────────────────────────────────
+    async logSession() {
+      const durationSeconds = (this.sessionEnd - this.sessionStart) / 1000;
+      const payload = {
+        session: {
+          session_id: this.sessionId,
+          user: this.userName.trim(),
+          session_start: new Date(this.sessionStart).toISOString(),
+          session_end: new Date(this.sessionEnd).toISOString(),
+          session_duration: durationSeconds,
+          mode: this.mode,
+          factor: this.factorMode === 'random' ? null : parseInt(this.factorMode, 10),
+        },
+        problems: this.problems.map((p, i) => ({
+          problem_number: i + 1,
+          problem: p.problem,
+          submitted_answer: p.submittedAnswer,
+          correct: p.correct,
+          time_to_solve: p.timeToSolve,
+        })),
+      };
+
+      try {
+        const resp = await fetch('log.py', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (data.error) {
+          console.error('Log error:', data.error);
+          this.logError = true;
+        }
+      } catch (err) {
+        console.error('Failed to log session:', err);
+        this.logError = true;
+      }
+    },
+
+    // ── Sound (Web Audio API) ─────────────────────────────────────────
+    getAudioCtx() {
+      if (!this.audioCtx) {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return this.audioCtx;
+    },
+
+    playTone(frequency, type, startTime, duration, gainValue = 0.3) {
+      const ctx = this.getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(frequency, startTime);
+      gain.gain.setValueAtTime(gainValue, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    },
+
+    playSound(type) {
+      try {
+        const ctx = this.getAudioCtx();
+        const t = ctx.currentTime;
+        if (type === 'correct') {
+          // C5 → E5 ascending
+          this.playTone(523.25, 'sine', t,       0.18, 0.25);
+          this.playTone(659.25, 'sine', t + 0.15, 0.25, 0.25);
+        } else if (type === 'wrong') {
+          // low buzzy descending
+          this.playTone(220, 'sawtooth', t,       0.15, 0.18);
+          this.playTone(180, 'sawtooth', t + 0.12, 0.25, 0.14);
+        } else if (type === 'achievement') {
+          // C E G C arpeggio
+          const notes = [261.63, 329.63, 392.00, 523.25];
+          notes.forEach((f, i) => {
+            this.playTone(f, 'sine', t + i * 0.12, 0.3, 0.22);
+          });
+        }
+      } catch (e) {
+        // silently ignore if audio fails
+      }
+    },
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
